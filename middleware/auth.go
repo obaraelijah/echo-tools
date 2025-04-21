@@ -87,6 +87,15 @@ func Logout(c echo.Context) error {
 		return ErrDatabaseError
 	}
 
+	c.SetCookie(&http.Cookie{
+		Name:   context.GetSessionConfig().CookieName,
+		Value:  "",
+		Path:   context.GetSessionConfig().CookiePath,
+		Domain: "",
+		MaxAge: -1, // Cookie is invalidated through MaxAge < 0
+		Secure: *context.GetSessionConfig().Secure,
+	})
+
 	// Flushing current session
 	context.flush()
 	return nil
