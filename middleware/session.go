@@ -17,8 +17,10 @@ var ErrSessionMisconfigured = errors.New(
 
 type SessionContext interface {
 	GetUserID() *uint
+	GetSessionID() *string
 	IsAuthenticated() bool
 	GetSessionConfig() *SessionConfig
+	flush()
 }
 
 // SessionConfig Set the parameters for the Session.
@@ -39,6 +41,7 @@ type s struct {
 	userID        *uint
 	authenticated bool
 	sessionConfig *SessionConfig
+	sessionID     *string
 }
 
 // GetUserID Returns a pointer to a userID if present else nil
@@ -54,6 +57,16 @@ func (s *s) IsAuthenticated() bool {
 // GetSessionConfig Returns the config of the session middleware. Mostly for internal use of session.Login
 func (s *s) GetSessionConfig() *SessionConfig {
 	return s.sessionConfig
+}
+
+func (s *s) GetSessionID() *string {
+	return s.sessionID
+}
+
+func (s *s) flush() {
+	s.userID = nil
+	s.authenticated = false
+	s.sessionID = nil
 }
 
 func (config *SessionConfig) FixSessionConfig() {
@@ -124,6 +137,8 @@ func Session(config *SessionConfig) echo.MiddlewareFunc {
 							// Check if user is valid
 							if user.ID > 0 && user.Active.Valid && user.Active.Bool {
 								sessionContext.userID = &user.ID
+
+								sessionContext.sessionID = &session.SessionID
 								sessionContext.authenticated = true
 							} else {
 								// User is invalid or not active
