@@ -6,6 +6,10 @@ import (
 	"gorm.io/gorm"
 )
 
+type ID struct {
+	ID uint `gorm:"primarykey" json:"id"`
+}
+
 type Common struct {
 	ID        uint      `gorm:"primarykey" json:"id"`
 	CreatedAt time.Time `json:"-"`
