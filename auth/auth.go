@@ -2,14 +2,17 @@ package auth
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/obaraelijah/echo-tools/db"
 	"github.com/obaraelijah/echo-tools/utilitymodels"
 	"golang.org/x/crypto/bcrypt"
 )
 
-var ErrAuthenticationFailed = errors.New("authentication failed")
-var ErrUsernameNotFound = errors.New("username not found")
+var (
+	ErrAuthenticationFailed = errors.New("authentication failed")
+	ErrUsernameNotFound     = errors.New("username not found")
+)
 
 // Authenticate Try to authenticate with the given credentials
 func Authenticate(username string, password string) (*utilitymodels.User, error) {
@@ -25,7 +28,9 @@ func Authenticate(username string, password string) (*utilitymodels.User, error)
 		)
 		return nil, ErrUsernameNotFound
 	}
+
 	if err := bcrypt.CompareHashAndPassword([]byte(u.Password), []byte(password)); err != nil {
+		fmt.Println(err.Error())
 		return nil, ErrAuthenticationFailed
 	}
 
