@@ -3,6 +3,7 @@ package db
 import (
 	"database/sql"
 	"fmt"
+	"os"
 
 	"github.com/obaraelijah/echo-tools/utilitymodels"
 	"golang.org/x/crypto/bcrypt"
@@ -15,7 +16,7 @@ func Initialize(dial gorm.Dialector, models ...interface{}) {
 	// Open DB
 	conn, err := gorm.Open(dial, &gorm.Config{})
 	if err != nil {
-		panic(err.Error())
+		os.Exit(1)
 	}
 
 	models = append(models, &utilitymodels.User{})
@@ -24,7 +25,7 @@ func Initialize(dial gorm.Dialector, models ...interface{}) {
 	if err := conn.AutoMigrate(
 		models...,
 	); err != nil {
-		panic(err.Error())
+		os.Exit(1)
 	}
 
 	DB = conn
@@ -47,7 +48,6 @@ func CreateUser(username string, password string, email string, active bool) (*u
 			Valid: true,
 		},
 	}
-
 	if err := DB.Create(&u).Error; err != nil {
 		return nil, err
 	}
