@@ -83,7 +83,8 @@ func Logout(c echo.Context) error {
 	}
 
 	if err := db.DB.Where("session_id = ?", *context.GetSessionID()).Delete(&utilitymodels.Session{}).Error; err != nil {
-		fmt.Println(err.Error())
+		c.Logger().Error(err.Error())
+		return ErrDatabaseError
 	}
 
 	// Flushing current session
