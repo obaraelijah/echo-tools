@@ -2,7 +2,6 @@ package db
 
 import (
 	"database/sql"
-	"fmt"
 	"os"
 
 	"github.com/obaraelijah/echo-tools/utilitymodels"
@@ -33,7 +32,6 @@ func Initialize(dial gorm.Dialector, models ...interface{}) {
 
 // CreateUser Helper method to create a user. bcrypt with a cost of 12 is used as hash.
 func CreateUser(username string, password string, email string, active bool) (*utilitymodels.User, error) {
-	fmt.Println(password)
 	hash, err := bcrypt.GenerateFromPassword([]byte(password), 12)
 	if err != nil {
 		return nil, err
