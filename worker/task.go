@@ -1,20 +1,23 @@
 package worker
 
-type taskInterface interface {
-	Error() error
-}
-
-//Task This defines how a task used for a pool should be look like.
+// Task This defines how a task used for a pool should be look like.
 // The Method Error() returns an error if the function F returns an error
-type Task struct {
-	err error
+type task struct {
+	ret chan error
 	F   func() error
 }
 
-func (t *Task) Error() error {
-	return t.err
+func NewTask(f func() error) *task {
+	return &task{
+		F:   f,
+		ret: make(chan error, 1), // Buffered channel to fetch the result non-blocking
+	}
 }
 
-func (t *Task) execute() {
-	t.err = t.F()
+func (t *task) WaitForResult() error {
+	return <-t.ret
+}
+
+func (t *task) execute() {
+	t.ret <- t.F()
 }

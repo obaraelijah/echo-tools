@@ -5,14 +5,15 @@ type pool struct {
 	numWorker int
 
 	//newTasks is used to enqueue new tasks while running. The main go routine will append these tasks to queue.
-	newTasks chan *Task
+	//newTasks chan bool
 	//queue is the channel, worker consume their tasks from
-	queue chan *Task
+	queue chan *task
 	//quit is the control channel to stop the main go routine
 	quit chan bool
+	//lock sync.Mutex
 }
 
-// PoolConfig Configuration for a worker pool. If you want AddTask / AddTasks to be blocking set QueueSize to 0.
+// PoolConfig Configuration for a worker pool.
 type PoolConfig struct {
 	NumWorker int
 	QueueSize int
@@ -25,27 +26,27 @@ func NewPool(c *PoolConfig) *pool {
 			QueueSize: 10,
 		}
 	}
-	if c.NumWorker <= 0 {
-		panic("NumWorker must be greater than 0")
+	if c.NumWorker <= 0 || c.QueueSize <= 0 {
+		panic("NumWorker and QueueSize must be greater than 0")
 	}
 
 	return &pool{
 		numWorker: c.NumWorker,
-		newTasks:  make(chan *Task, c.QueueSize),
-		queue:     make(chan *Task),
+		queue:     make(chan *task, c.QueueSize),
 		quit:      make(chan bool),
 	}
 }
 
-// AddTask adds a task to the queue
-func (p *pool) AddTask(task *Task) {
-	p.newTasks <- task
+// AddTask adds a task to the queue. Blocking until the Task is enqueued.
+func (p *pool) AddTask(t *task) {
+	p.queue <- t
+
 }
 
-// AddTasks add a bunch of tasks to the queue
-func (p *pool) AddTasks(tasks []*Task) {
+// AddTasks add a bunch of tasks to the queue. Block until every Task is enqueued.
+func (p *pool) AddTasks(tasks []*task) {
 	for _, t := range tasks {
-		p.newTasks <- t
+		p.queue <- t
 	}
 }
 
@@ -58,20 +59,9 @@ func (p *pool) Start() {
 		p.workers = append(p.workers, w)
 		go w.Start()
 	}
-
-	go func() {
-		for {
-			select {
-			case t := <-p.newTasks:
-				p.queue <- t
-			case <-p.quit:
-				return
-			}
-		}
-	}()
 }
 
-//Stop stops background workers
+// Stop stops background workers
 func (p *pool) Stop() {
 	for _, w := range p.workers {
 		w.Stop()
