@@ -6,8 +6,8 @@ import (
 	"time"
 
 	"github.com/labstack/echo/v4"
-	"github.com/obaraelijah/echo-tools/db"
 	"github.com/obaraelijah/echo-tools/utilitymodels"
+	"gorm.io/gorm"
 )
 
 var ErrSessionMisconfigured = errors.New(
@@ -86,7 +86,7 @@ func (config *SessionConfig) FixSessionConfig() {
 
 // Session Use as middleware. Requires CustomContext to be set with a corresponding struct that embeds SessionContext
 // or has a field named SessionContext. If SessionContext is not found, the middleware is skipped.
-func Session(config *SessionConfig) echo.MiddlewareFunc {
+func Session(db *gorm.DB, config *SessionConfig) echo.MiddlewareFunc {
 	if config == nil {
 		config = &SessionConfig{}
 	}
@@ -118,7 +118,7 @@ func Session(config *SessionConfig) echo.MiddlewareFunc {
 
 				var sessionCount int64
 				var session utilitymodels.Session
-				db.DB.Find(&session).Where("session_id = ?", cookie.Value).Count(&sessionCount)
+				db.Find(&session).Where("session_id = ?", cookie.Value).Count(&sessionCount)
 				switch sessionCount {
 				case 0:
 					// No session with that id was found
@@ -131,7 +131,7 @@ func Session(config *SessionConfig) echo.MiddlewareFunc {
 					// Check if session is not expired
 					if !time.Now().UTC().After(session.ValidUntil) {
 						var user utilitymodels.User
-						if err := db.DB.Model(session).Association("User").Find(&user); err != nil {
+						if db.Model(session).Association("User").Find(&user); err != nil {
 							c.Logger().Warn(err)
 						} else {
 							// Check if user is valid

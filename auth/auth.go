@@ -4,9 +4,9 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/obaraelijah/echo-tools/db"
 	"github.com/obaraelijah/echo-tools/utilitymodels"
 	"golang.org/x/crypto/bcrypt"
+	"gorm.io/gorm"
 )
 
 var (
@@ -15,11 +15,11 @@ var (
 )
 
 // Authenticate Try to authenticate with the given credentials
-func Authenticate(username string, password string) (*utilitymodels.User, error) {
+func Authenticate(db *gorm.DB, username string, password string) (*utilitymodels.User, error) {
 	var u utilitymodels.User
 	var count int64
 
-	db.DB.Find(&u, "username = ?", username).Count(&count)
+	db.Find(&u, "username = ?", username).Count(&count)
 	if count == 0 {
 		// Comparing static hash in order to deny username enumeration by looking at the time a request took
 		bcrypt.CompareHashAndPassword(

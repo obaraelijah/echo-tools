@@ -1,4 +1,4 @@
-package db
+package database
 
 import (
 	"database/sql"
@@ -9,9 +9,7 @@ import (
 	"gorm.io/gorm"
 )
 
-var DB *gorm.DB
-
-func Initialize(dial gorm.Dialector, models ...interface{}) {
+func Initialize(dial gorm.Dialector, models ...interface{}) *gorm.DB {
 	// Open DB
 	conn, err := gorm.Open(dial, &gorm.Config{})
 	if err != nil {
@@ -27,11 +25,11 @@ func Initialize(dial gorm.Dialector, models ...interface{}) {
 		os.Exit(1)
 	}
 
-	DB = conn
+	return conn
 }
 
 // CreateUser Helper method to create a user. bcrypt with a cost of 12 is used as hash.
-func CreateUser(username string, password string, email string, active bool) (*utilitymodels.User, error) {
+func CreateUser(db *gorm.DB, username string, password string, email string, active bool) (*utilitymodels.User, error) {
 	hash, err := bcrypt.GenerateFromPassword([]byte(password), 12)
 	if err != nil {
 		return nil, err
@@ -46,7 +44,7 @@ func CreateUser(username string, password string, email string, active bool) (*u
 			Valid: true,
 		},
 	}
-	if err := DB.Create(&u).Error; err != nil {
+	if err := db.Create(&u).Error; err != nil {
 		return nil, err
 	}
 
