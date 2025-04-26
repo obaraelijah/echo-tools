@@ -1,6 +1,11 @@
 package worker
 
-// Task This defines how a task used for a pool should be look like.
+type Task interface {
+	WaitForResult() error
+	execute()
+}
+
+// task This defines how a task used for a pool should be look like.
 // The Method Error() returns an error if the function F returns an error
 type task struct {
 	ret chan error

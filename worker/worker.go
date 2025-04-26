@@ -1,7 +1,7 @@
 package worker
 
 type worker struct {
-	queue chan *task
+	queue chan Task
 	quit  chan bool
 }
 

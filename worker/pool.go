@@ -1,5 +1,12 @@
 package worker
 
+type Pool interface {
+	AddTask(t Task)
+	AddTasks(t []Task)
+	Start()
+	Stop()
+}
+
 type pool struct {
 	workers   []*worker
 	numWorker int
@@ -7,7 +14,7 @@ type pool struct {
 	//newTasks is used to enqueue new tasks while running. The main go routine will append these tasks to queue.
 	//newTasks chan bool
 	//queue is the channel, worker consume their tasks from
-	queue chan *task
+	queue chan Task
 	//quit is the control channel to stop the main go routine
 	quit chan bool
 	//lock sync.Mutex
@@ -32,19 +39,19 @@ func NewPool(c *PoolConfig) *pool {
 
 	return &pool{
 		numWorker: c.NumWorker,
-		queue:     make(chan *task, c.QueueSize),
+		queue:     make(chan Task, c.QueueSize),
 		quit:      make(chan bool),
 	}
 }
 
 // AddTask adds a task to the queue. Blocking until the Task is enqueued.
-func (p *pool) AddTask(t *task) {
+func (p *pool) AddTask(t Task) {
 	p.queue <- t
 
 }
 
 // AddTasks add a bunch of tasks to the queue. Block until every Task is enqueued.
-func (p *pool) AddTasks(tasks []*task) {
+func (p *pool) AddTasks(tasks []Task) {
 	for _, t := range tasks {
 		p.queue <- t
 	}
