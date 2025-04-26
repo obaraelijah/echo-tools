@@ -44,6 +44,8 @@ func ValidateJsonForm(c echo.Context, form interface{}) error {
 	var notEmptyViolated []string
 	for i := 0; i < t.NumField(); i++ {
 		field := t.Field(i)
+		fieldType := field.Type
+		fieldElem := e.Field(i)
 		tags := strings.Split(field.Tag.Get(tagName), ";")
 		cleaned := funcgo.Map(func(elem string) string { return strings.TrimSpace(elem) })(tags)
 		required := funcgo.Any(func(elem string) bool { return elem == "required" })(cleaned)
@@ -53,11 +55,36 @@ func ValidateJsonForm(c echo.Context, form interface{}) error {
 			jsonName = s[0]
 		}
 
-		if required && e.Field(i).IsNil() {
-			missing = append(missing, jsonName)
-		} else {
-			if notEmpty && e.Field(i).Type() == reflect.TypeOf("") && e.Field(i).String() == "" {
-				notEmptyViolated = append(notEmptyViolated, jsonName)
+		isPointer := fieldType.Kind() == reflect.Ptr
+
+		// Required validation -> Can only be done on pointer
+		if required {
+			if isPointer {
+				if fieldElem.IsNil() {
+					missing = append(missing, jsonName)
+				}
+			} else {
+				// As this was probably not intended, output warnings
+				c.Logger().Warnf("echotools required tag set on a non-pointer field: %s", jsonName)
+			}
+		}
+
+		// Not empty validation -> Can only be done on string and *string
+		if notEmpty {
+			// Dereference pointer of needed
+			if isPointer {
+				fieldElem = fieldElem.Elem()
+				fieldType = fieldElem.Type()
+			}
+
+			// Check if field type is string
+			if fieldType.Kind() == reflect.String {
+				if fieldElem.String() == "" {
+					notEmptyViolated = append(notEmptyViolated, jsonName)
+				}
+			} else {
+				// As this was probably not intended, output warnings
+				c.Logger().Warnf("echotools not empty tag set on a non-string field: %s", jsonName)
 			}
 		}
 	}
