@@ -17,7 +17,6 @@ type pool struct {
 	queue chan Task
 	//quit is the control channel to stop the main go routine
 	quit chan bool
-	//lock sync.Mutex
 }
 
 // PoolConfig Configuration for a worker pool.
