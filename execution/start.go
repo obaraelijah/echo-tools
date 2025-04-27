@@ -14,13 +14,19 @@ import (
 	"github.com/obaraelijah/echo-tools/color"
 )
 
-func SignalStart(e *echo.Echo, listenAddress string, restartFunc func()) {
+type Config struct {
+	ReloadFunc    func()
+	StopFunc      func()
+	TerminateFunc func()
+}
+
+func SignalStart(e *echo.Echo, listenAddress string, config *Config) {
 	control := make(chan os.Signal, 1)
 	signal.Notify(control, syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
 	go func() {
 		// Start server
 		if err := e.Start(listenAddress); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			e.Logger.Fatal()
+			fmt.Println(err.Error())
 		}
 	}()
 
@@ -39,10 +45,12 @@ func SignalStart(e *echo.Echo, listenAddress string, restartFunc func()) {
 			color.Println(color.PURPLE, "Server is stopping gracefully")
 			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 			e.Shutdown(ctx)
+			config.StopFunc()
 			cancel()
 			break
 		} else if sig == syscall.SIGTERM { // Shutdown immediately
 			e.Close()
+			config.TerminateFunc()
 			color.Println(color.PURPLE, "Server was shut down")
 			break
 		} else {
@@ -51,6 +59,6 @@ func SignalStart(e *echo.Echo, listenAddress string, restartFunc func()) {
 	}
 
 	if restart {
-		restartFunc()
+		config.ReloadFunc()
 	}
 }
