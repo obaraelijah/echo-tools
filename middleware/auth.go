@@ -100,3 +100,11 @@ func Logout(db *gorm.DB, c echo.Context) error {
 	context.flush()
 	return nil
 }
+
+// InvalidateSessions Helper method to invalidate all sessions of a user
+func InvalidateSessions(db *gorm.DB, userID uint) error {
+	if err := db.Where("user_id = ?", userID).Delete(&utilitymodels.Session{}).Error; err != nil {
+		return ErrDatabaseError
+	}
+	return nil
+}

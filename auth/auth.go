@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/obaraelijah/echo-tools/middleware"
 	"github.com/obaraelijah/echo-tools/utilitymodels"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
@@ -12,6 +13,8 @@ import (
 var (
 	ErrAuthenticationFailed = errors.New("authentication failed")
 	ErrUsernameNotFound     = errors.New("username not found")
+	ErrUserNotFound         = errors.New("user not found")
+	ErrHashError            = errors.New("hashing has failed")
 )
 
 // Authenticate Try to authenticate with the given credentials
@@ -35,4 +38,33 @@ func Authenticate(db *gorm.DB, username string, password string) (*utilitymodels
 	}
 
 	return &u, nil
+}
+
+func SetNewPassword(db *gorm.DB, userID uint, newPassword string) error {
+	var u utilitymodels.User
+	var count int64
+
+	if err := db.Find(&u, userID).Count(&count).Error; err != nil {
+		return middleware.ErrDatabaseError
+	}
+
+	if count != 1 {
+		return ErrUserNotFound
+	}
+
+	if hash, err := bcrypt.GenerateFromPassword([]byte(newPassword), 12); err != nil {
+		return ErrHashError
+	} else {
+		u.Password = string(hash)
+	}
+
+	if err := middleware.InvalidateSessions(db, userID); err != nil {
+		return err
+	}
+
+	if err := db.Save(&u).Error; err != nil {
+		fmt.Println("unable to update user")
+		return middleware.ErrDatabaseError
+	}
+	return nil
 }
