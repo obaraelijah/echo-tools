@@ -33,7 +33,6 @@ func Authenticate(db *gorm.DB, username string, password string) (*utilitymodels
 	}
 
 	if err := bcrypt.CompareHashAndPassword([]byte(u.Password), []byte(password)); err != nil {
-		fmt.Println(err.Error())
 		return nil, ErrAuthenticationFailed
 	}
 
