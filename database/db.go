@@ -29,7 +29,7 @@ func Initialize(dial gorm.Dialector, models ...interface{}) *gorm.DB {
 }
 
 // CreateUser Helper method to create a user. bcrypt with a cost of 12 is used as hash.
-func CreateUser(db *gorm.DB, username string, password string, email string, active bool) (*utilitymodels.User, error) {
+func CreateUser(db *gorm.DB, username string, password string, email *string, active bool) (*utilitymodels.User, error) {
 	hash, err := bcrypt.GenerateFromPassword([]byte(password), 12)
 	if err != nil {
 		return nil, err
