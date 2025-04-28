@@ -13,7 +13,8 @@ import (
 )
 
 var (
-	ErrDatabaseError = errors.New("there was a problem updating the database")
+	ErrDatabaseError  = errors.New("there was a problem updating the database")
+	ErrCookieNotFound = errors.New("cookie is missing")
 )
 
 // Login This method is used to log a user in. auth.Authenticate has to be called before.
@@ -79,7 +80,7 @@ func Logout(db *gorm.DB, c echo.Context) error {
 
 	// If user is not authenticated, there's nothing to do
 	if !context.IsAuthenticated() {
-		return nil
+		return ErrCookieNotFound
 	}
 
 	if err := db.Where("session_id = ?", *context.GetSessionID()).Delete(&utilitymodels.Session{}).Error; err != nil {
