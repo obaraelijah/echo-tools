@@ -222,7 +222,7 @@ func (l *logger) Infof(format string, a ...any) {
 	for _, line := range strings.Split(fmt.Sprintf(format, a...), "\n") {
 		l.m["time"] = time.Now().Format(time.RFC3339)
 		l.m["msg"] = line
-		l.m["level"] = "INFO"
+		l.m["level"] = "INFO "
 		l.template.Execute(&buffer, l.m)
 		root.queue <- logMessage{msg: buffer.String()}
 		buffer.Reset()
