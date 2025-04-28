@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/labstack/echo/v4"
+	"github.com/obaraelijah/echo-tools/logging"
 	"github.com/obaraelijah/echo-tools/utilitymodels"
 	"gorm.io/gorm"
 )
@@ -86,7 +87,7 @@ func (config *SessionConfig) FixSessionConfig() {
 
 // Session Use as middleware. Requires CustomContext to be set with a corresponding struct that embeds SessionContext
 // or has a field named SessionContext. If SessionContext is not found, the middleware is skipped.
-func Session(db *gorm.DB, config *SessionConfig) echo.MiddlewareFunc {
+func Session(db *gorm.DB, log logging.Logger, config *SessionConfig) echo.MiddlewareFunc {
 	if config == nil {
 		config = &SessionConfig{}
 	}
@@ -97,7 +98,7 @@ func Session(db *gorm.DB, config *SessionConfig) echo.MiddlewareFunc {
 			// Check if SessionContext is available
 			field := reflect.ValueOf(c).Elem().FieldByName("SessionContext")
 			if field == (reflect.Value{}) {
-				c.Logger().Error(ErrSessionMisconfigured)
+				log.Error(ErrSessionMisconfigured.Error())
 				// Skipping middleware to not break the server
 				return next(c)
 			}
@@ -112,7 +113,7 @@ func Session(db *gorm.DB, config *SessionConfig) echo.MiddlewareFunc {
 			if cookie, err := c.Cookie(config.CookieName); err != nil {
 				// No need to do something, default values of sessionContext are fine
 				if !config.DisableLogging {
-					c.Logger().Debugf("Cookie \"%s\" is not present in request", config.CookieName)
+					log.Debugf("Cookie \"%s\" is not present in request", config.CookieName)
 				}
 			} else {
 
@@ -123,7 +124,7 @@ func Session(db *gorm.DB, config *SessionConfig) echo.MiddlewareFunc {
 				case 0:
 					// No session with that id was found
 					if !config.DisableLogging {
-						c.Logger().Debugf("Cookie with SessionID %s was not found in DB", cookie.Value)
+						log.Debugf("Cookie with SessionID %s was not found in DB", cookie.Value)
 					}
 				case 1:
 					// Session was found
@@ -132,18 +133,17 @@ func Session(db *gorm.DB, config *SessionConfig) echo.MiddlewareFunc {
 					if !time.Now().UTC().After(session.ValidUntil) {
 						var user utilitymodels.User
 						if db.Model(session).Association("User").Find(&user); err != nil {
-							c.Logger().Warn(err)
+							log.Warn(err.Error())
 						} else {
 							// Check if user is valid
 							if user.ID > 0 && user.Active.Valid && user.Active.Bool {
 								sessionContext.userID = &user.ID
-
 								sessionContext.sessionID = &session.SessionID
 								sessionContext.authenticated = true
 							} else {
 								// User is invalid or not active
 								if !config.DisableLogging {
-									c.Logger().Debugf(
+									log.Debugf(
 										"Invalid or deactivated user: userID: %d | %+v",
 										user.ID, user.Active,
 									)
