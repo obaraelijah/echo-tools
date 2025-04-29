@@ -68,7 +68,6 @@ type logger struct {
 	queue       chan logMessage
 	quit        chan bool
 	template    *template.Template
-	m           map[string]string
 }
 
 func GetLogLevel() LogLevel {
@@ -161,7 +160,6 @@ func GetLogger(name string) Logger {
 		format:   root.format,
 		template: root.template,
 		LogLevel: root.LogLevel,
-		m:        make(map[string]string),
 	}
 	root.logger = append(root.logger, l)
 	l.SetName(name)
@@ -173,11 +171,13 @@ func (l *logger) Debug(msg string) {
 		return
 	}
 	buffer := bytes.Buffer{}
+	m := make(map[string]string)
+	m["logger"] = l.name
 	for _, line := range strings.Split(msg, "\n") {
-		l.m["time"] = time.Now().Format(time.RFC3339)
-		l.m["msg"] = line
-		l.m["level"] = "DEBUG"
-		l.template.Execute(&buffer, l.m)
+		m["time"] = time.Now().Format(time.RFC3339)
+		m["msg"] = line
+		m["level"] = "DEBUG"
+		l.template.Execute(&buffer, m)
 		root.queue <- logMessage{msg: buffer.String()}
 		buffer.Reset()
 	}
@@ -188,11 +188,13 @@ func (l *logger) Debugf(format string, a ...any) {
 		return
 	}
 	buffer := bytes.Buffer{}
+	m := make(map[string]string)
+	m["logger"] = l.name
 	for _, line := range strings.Split(fmt.Sprintf(format, a...), "\n") {
-		l.m["time"] = time.Now().Format(time.RFC3339)
-		l.m["msg"] = line
-		l.m["level"] = "DEBUG"
-		l.template.Execute(&buffer, l.m)
+		m["time"] = time.Now().Format(time.RFC3339)
+		m["msg"] = line
+		m["level"] = "DEBUG"
+		l.template.Execute(&buffer, m)
 		root.queue <- logMessage{msg: buffer.String()}
 		buffer.Reset()
 	}
@@ -203,11 +205,13 @@ func (l *logger) Info(msg string) {
 		return
 	}
 	buffer := bytes.Buffer{}
+	m := make(map[string]string)
+	m["logger"] = l.name
 	for _, line := range strings.Split(msg, "\n") {
-		l.m["time"] = time.Now().Format(time.RFC3339)
-		l.m["msg"] = line
-		l.m["level"] = "INFO "
-		l.template.Execute(&buffer, l.m)
+		m["time"] = time.Now().Format(time.RFC3339)
+		m["msg"] = line
+		m["level"] = "INFO "
+		l.template.Execute(&buffer, m)
 		root.queue <- logMessage{msg: buffer.String()}
 		buffer.Reset()
 	}
@@ -219,11 +223,13 @@ func (l *logger) Infof(format string, a ...any) {
 		return
 	}
 	buffer := bytes.Buffer{}
+	m := make(map[string]string)
+	m["logger"] = l.name
 	for _, line := range strings.Split(fmt.Sprintf(format, a...), "\n") {
-		l.m["time"] = time.Now().Format(time.RFC3339)
-		l.m["msg"] = line
-		l.m["level"] = "INFO "
-		l.template.Execute(&buffer, l.m)
+		m["time"] = time.Now().Format(time.RFC3339)
+		m["msg"] = line
+		m["level"] = "INFO "
+		l.template.Execute(&buffer, m)
 		root.queue <- logMessage{msg: buffer.String()}
 		buffer.Reset()
 	}
@@ -234,11 +240,13 @@ func (l *logger) Warn(msg string) {
 		return
 	}
 	buffer := bytes.Buffer{}
+	m := make(map[string]string)
+	m["logger"] = l.name
 	for _, line := range strings.Split(msg, "\n") {
-		l.m["time"] = time.Now().Format(time.RFC3339)
-		l.m["msg"] = line
-		l.m["level"] = "WARN "
-		l.template.Execute(&buffer, l.m)
+		m["time"] = time.Now().Format(time.RFC3339)
+		m["msg"] = line
+		m["level"] = "WARN "
+		l.template.Execute(&buffer, m)
 		root.queue <- logMessage{msg: buffer.String()}
 		buffer.Reset()
 	}
@@ -249,11 +257,13 @@ func (l *logger) Warnf(format string, a ...any) {
 		return
 	}
 	buffer := bytes.Buffer{}
+	m := make(map[string]string)
+	m["logger"] = l.name
 	for _, line := range strings.Split(fmt.Sprintf(format, a...), "\n") {
-		l.m["time"] = time.Now().Format(time.RFC3339)
-		l.m["msg"] = line
-		l.m["level"] = "WARN "
-		l.template.Execute(&buffer, l.m)
+		m["time"] = time.Now().Format(time.RFC3339)
+		m["msg"] = line
+		m["level"] = "WARN "
+		l.template.Execute(&buffer, m)
 		root.queue <- logMessage{msg: buffer.String()}
 		buffer.Reset()
 	}
@@ -264,11 +274,13 @@ func (l *logger) Error(msg string) {
 		return
 	}
 	buffer := bytes.Buffer{}
+	m := make(map[string]string)
+	m["logger"] = l.name
 	for _, line := range strings.Split(msg, "\n") {
-		l.m["time"] = time.Now().Format(time.RFC3339)
-		l.m["msg"] = line
-		l.m["level"] = "ERROR"
-		l.template.Execute(&buffer, l.m)
+		m["time"] = time.Now().Format(time.RFC3339)
+		m["msg"] = line
+		m["level"] = "ERROR"
+		l.template.Execute(&buffer, m)
 		root.queue <- logMessage{msg: buffer.String()}
 		buffer.Reset()
 	}
@@ -279,11 +291,13 @@ func (l *logger) Errorf(format string, a ...any) {
 		return
 	}
 	buffer := bytes.Buffer{}
+	m := make(map[string]string)
+	m["logger"] = l.name
 	for _, line := range strings.Split(fmt.Sprintf(format, a...), "\n") {
-		l.m["time"] = time.Now().Format(time.RFC3339)
-		l.m["msg"] = line
-		l.m["level"] = "ERROR"
-		l.template.Execute(&buffer, l.m)
+		m["time"] = time.Now().Format(time.RFC3339)
+		m["msg"] = line
+		m["level"] = "ERROR"
+		l.template.Execute(&buffer, m)
 		root.queue <- logMessage{msg: buffer.String()}
 		buffer.Reset()
 	}
@@ -294,11 +308,13 @@ func (l *logger) Fatal(msg string) {
 		return
 	}
 	buffer := bytes.Buffer{}
+	m := make(map[string]string)
+	m["logger"] = l.name
 	for _, line := range strings.Split(msg, "\n") {
-		l.m["time"] = time.Now().Format(time.RFC3339)
-		l.m["msg"] = line
-		l.m["level"] = "FATAL"
-		l.template.Execute(&buffer, l.m)
+		m["time"] = time.Now().Format(time.RFC3339)
+		m["msg"] = line
+		m["level"] = "FATAL"
+		l.template.Execute(&buffer, m)
 		root.queue <- logMessage{msg: buffer.String()}
 		buffer.Reset()
 	}
@@ -309,11 +325,13 @@ func (l *logger) Fatalf(format string, a ...any) {
 		return
 	}
 	buffer := bytes.Buffer{}
+	m := make(map[string]string)
+	m["logger"] = l.name
 	for _, line := range strings.Split(fmt.Sprintf(format, a...), "\n") {
-		l.m["time"] = time.Now().Format(time.RFC3339)
-		l.m["msg"] = line
-		l.m["level"] = "FATAL"
-		l.template.Execute(&buffer, l.m)
+		m["time"] = time.Now().Format(time.RFC3339)
+		m["msg"] = line
+		m["level"] = "FATAL"
+		l.template.Execute(&buffer, m)
 		root.queue <- logMessage{msg: buffer.String(), fatal: true}
 		buffer.Reset()
 	}
@@ -324,11 +342,13 @@ func (l *logger) Panic(msg string) {
 		return
 	}
 	buffer := bytes.Buffer{}
+	m := make(map[string]string)
+	m["logger"] = l.name
 	for _, line := range strings.Split(msg, "\n") {
-		l.m["time"] = time.Now().Format(time.RFC3339)
-		l.m["msg"] = line
-		l.m["level"] = "PANIC"
-		l.template.Execute(&buffer, l.m)
+		m["time"] = time.Now().Format(time.RFC3339)
+		m["msg"] = line
+		m["level"] = "PANIC"
+		l.template.Execute(&buffer, m)
 		root.queue <- logMessage{msg: buffer.String(), panic: true}
 		buffer.Reset()
 	}
@@ -339,11 +359,13 @@ func (l *logger) Panicf(format string, a ...any) {
 		return
 	}
 	buffer := bytes.Buffer{}
+	m := make(map[string]string)
+	m["logger"] = l.name
 	for _, line := range strings.Split(fmt.Sprintf(format, a...), "\n") {
-		l.m["time"] = time.Now().Format(time.RFC3339)
-		l.m["msg"] = line
-		l.m["level"] = "PANIC"
-		l.template.Execute(&buffer, l.m)
+		m["time"] = time.Now().Format(time.RFC3339)
+		m["msg"] = line
+		m["level"] = "PANIC"
+		l.template.Execute(&buffer, m)
 		root.queue <- logMessage{msg: buffer.String(), panic: true}
 		buffer.Reset()
 	}
@@ -351,7 +373,6 @@ func (l *logger) Panicf(format string, a ...any) {
 
 func (l *logger) SetName(name string) {
 	l.name = name
-	l.m["logger"] = name
 }
 
 func Stop() {
