@@ -23,7 +23,7 @@ var (
 // Parameter c: Pointer to the current context. Must implement middleware.SessionContext
 // Parameter config: Refer to SessionConfig.
 func Login(db *gorm.DB, user *utilitymodels.User, c echo.Context) error {
-	context := c.(SessionContext)
+	context := c.Get("SessionContext").(SessionContext)
 
 	// Couldn't find session with the current user associated
 	session := utilitymodels.Session{
@@ -76,29 +76,29 @@ func Login(db *gorm.DB, user *utilitymodels.User, c echo.Context) error {
 // Logout Helper method to logout and therefore invalidating a user's session. If the user isn't logged in,
 // nil is returned
 func Logout(db *gorm.DB, c echo.Context) error {
-	context := c.(SessionContext)
+	sessionContext := c.Get("SessionContext").(SessionContext)
 
 	// If user is not authenticated, there's nothing to do
-	if !context.IsAuthenticated() {
+	if !sessionContext.IsAuthenticated() {
 		return ErrCookieNotFound
 	}
 
-	if err := db.Where("session_id = ?", *context.GetSessionID()).Delete(&utilitymodels.Session{}).Error; err != nil {
+	if err := db.Where("session_id = ?", *sessionContext.GetSessionID()).Delete(&utilitymodels.Session{}).Error; err != nil {
 		c.Logger().Error(err.Error())
 		return ErrDatabaseError
 	}
 
 	c.SetCookie(&http.Cookie{
-		Name:   context.GetSessionConfig().CookieName,
+		Name:   sessionContext.GetSessionConfig().CookieName,
 		Value:  "",
-		Path:   context.GetSessionConfig().CookiePath,
+		Path:   sessionContext.GetSessionConfig().CookiePath,
 		Domain: "",
 		MaxAge: -1, // Cookie is invalidated through MaxAge < 0
-		Secure: *context.GetSessionConfig().Secure,
+		Secure: *sessionContext.GetSessionConfig().Secure,
 	})
 
 	// Flushing current session
-	context.flush()
+	sessionContext.flush()
 	return nil
 }
 
