@@ -2,7 +2,6 @@ package middleware
 
 import (
 	"github.com/labstack/echo/v4"
-	"github.com/obaraelijah/echo-tools/utility"
 )
 
 // LoginRequired Helper function to mark endpoint as login only. Requires Session as a middleware.
@@ -14,7 +13,7 @@ func LoginRequired(f func(echo.Context) error) echo.HandlerFunc {
 
 		// Check if user is authenticated
 		if !sessionContext.IsAuthenticated() {
-			return c.JSON(403, utility.JsonResponse{Error: "Unauthenticated"})
+			return c.JSON(403, struct{ Error string }{Error: "Unauthenticated"})
 		}
 
 		return f(c)
