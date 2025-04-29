@@ -9,10 +9,11 @@ import (
 	"github.com/obaraelijah/echo-tools/logging"
 )
 
-func Panic(log logging.Logger) echo.MiddlewareFunc {
+func Panic() echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
 			defer func() {
+				log := logging.GetLogger("panic-mw")
 				if r := recover(); r != nil {
 					if r == http.ErrAbortHandler {
 						panic(r)

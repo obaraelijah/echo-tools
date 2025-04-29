@@ -87,7 +87,7 @@ func (config *SessionConfig) FixSessionConfig() {
 
 // Session Use as middleware. Requires CustomContext to be set with a corresponding struct that embeds SessionContext
 // or has a field named SessionContext. If SessionContext is not found, the middleware is skipped.
-func Session(db *gorm.DB, log logging.Logger, config *SessionConfig) echo.MiddlewareFunc {
+func Session(db *gorm.DB, config *SessionConfig) echo.MiddlewareFunc {
 	if config == nil {
 		config = &SessionConfig{}
 	}
@@ -95,6 +95,7 @@ func Session(db *gorm.DB, log logging.Logger, config *SessionConfig) echo.Middle
 
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
+			log := logging.GetLogger("session-mw")
 			// Check if SessionContext is available
 			field := reflect.ValueOf(c).Elem().FieldByName("SessionContext")
 			if field == (reflect.Value{}) {

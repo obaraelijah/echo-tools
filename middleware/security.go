@@ -16,12 +16,13 @@ type SecurityConfig struct {
 	UseForwardedProtoHeader bool
 }
 
-func Security(log logging.Logger, config *SecurityConfig) echo.MiddlewareFunc {
+func Security(config *SecurityConfig) echo.MiddlewareFunc {
 	if config == nil {
 		panic("Security config must not be nil")
 	}
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
+			log := logging.GetLogger("security-mw")
 			allowed := false
 			if config.UseForwardedProtoHeader {
 				for _, allowedHost := range config.AllowedHosts {
