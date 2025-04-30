@@ -13,9 +13,20 @@ import (
 )
 
 var (
-	ErrDatabaseError  = errors.New("there was a problem updating the database")
-	ErrCookieNotFound = errors.New("cookie is missing")
+	ErrDatabaseError         = errors.New("there was a problem updating the database")
+	ErrCookieNotFound        = errors.New("cookie is missing")
+	ErrSessionContextMissing = errors.New("session context is missing")
 )
+
+// GetSessionContext returns a SessionContext from a Context
+func GetSessionContext(c echo.Context) (SessionContext, error) {
+	if context, ok := c.Get("SessionContext").(SessionContext); !ok {
+		return nil, ErrSessionContextMissing
+	} else {
+		return context, nil
+	}
+
+}
 
 // Login This method is used to log a user in. auth.Authenticate has to be called before.
 // A cookie is set if the user can be logged in.
