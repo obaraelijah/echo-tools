@@ -2,14 +2,12 @@ package middleware
 
 import (
 	"github.com/labstack/echo/v4"
-	"github.com/labstack/gommon/log"
 )
 
 type AllowedHost struct {
 	Host  string
 	Https bool
 }
-
 type SecurityConfig struct {
 	AllowedHosts            []AllowedHost
 	UseForwardedProtoHeader bool
@@ -30,9 +28,11 @@ func Security(config *SecurityConfig) echo.MiddlewareFunc {
 							break
 						} else if c.Request().TLS == nil {
 							proto := c.Request().Header.Get("X-Forwarded-Proto")
-							if !allowedHost.Https && proto == "http" {
-								allowed = true
-								break
+							if !allowedHost.Https {
+								if proto == "http" {
+									allowed = true
+									break
+								}
 							} else {
 								if proto == "https" {
 									allowed = true
@@ -60,7 +60,7 @@ func Security(config *SecurityConfig) echo.MiddlewareFunc {
 				if c.Request().TLS == nil {
 					proto = "http://"
 				}
-				log.Debugf("%s is not in allowed hosts", proto+c.Request().Host)
+				c.Logger().Debugf("%s is not in allowed hosts", proto+c.Request().Host)
 				return c.JSON(401, struct{ Error string }{Error: "not allowed"})
 			}
 			return next(c)
