@@ -32,6 +32,9 @@ func Security(config *SecurityConfig) echo.MiddlewareFunc {
 								if proto == "http" {
 									allowed = true
 									break
+								} else if proto == "" {
+									allowed = true
+									break
 								}
 							} else {
 								if proto == "https" {
