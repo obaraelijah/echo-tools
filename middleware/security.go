@@ -29,11 +29,11 @@ func Security(config *SecurityConfig) echo.MiddlewareFunc {
 							allowed = true
 							break
 						} else if c.Request().TLS == nil {
-							if !allowedHost.Https {
+							proto := c.Request().Header.Get("X-Forwarded-Proto")
+							if !allowedHost.Https && proto == "http" {
 								allowed = true
 								break
 							} else {
-								proto := c.Request().Header.Get("X-Forwarded-Proto")
 								if proto == "https" {
 									allowed = true
 									break
