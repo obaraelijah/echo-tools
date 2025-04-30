@@ -1,18 +1,11 @@
 package middleware
 
 import (
-	"errors"
 	"time"
 
 	"github.com/labstack/echo/v4"
-	"github.com/labstack/gommon/log"
 	"github.com/obaraelijah/echo-tools/utilitymodels"
 	"gorm.io/gorm"
-)
-
-var ErrSessionMisconfigured = errors.New(
-	"field SessionContext does not exist in Context. Skipping this middleware. " +
-		"Check if CustomContext is enabled and SessionContext is embedded in your context struct",
 )
 
 type SessionContext interface {
@@ -81,6 +74,9 @@ func (config *SessionConfig) FixSessionConfig() {
 		age := 30 * time.Minute
 		config.CookieAge = &age
 	}
+	if config.CookiePath == "" {
+		config.CookiePath = "/"
+	}
 	return
 }
 
@@ -106,7 +102,7 @@ func Session(db *gorm.DB, config *SessionConfig) echo.MiddlewareFunc {
 			if cookie, err := c.Cookie(config.CookieName); err != nil {
 				// No need to do something, default values of sessionContext are fine
 				if !config.DisableLogging {
-					log.Debugf("Cookie \"%s\" is not present in request", config.CookieName)
+					c.Logger().Debugf("Cookie \"%s\" is not present in request", config.CookieName)
 				}
 			} else {
 
@@ -117,7 +113,7 @@ func Session(db *gorm.DB, config *SessionConfig) echo.MiddlewareFunc {
 				case 0:
 					// No session with that id was found
 					if !config.DisableLogging {
-						log.Debugf("Cookie with SessionID %s was not found in DB", cookie.Value)
+						c.Logger().Debugf("Cookie with SessionID %s was not found in DB", cookie.Value)
 					}
 				case 1:
 					// Session was found
@@ -126,7 +122,7 @@ func Session(db *gorm.DB, config *SessionConfig) echo.MiddlewareFunc {
 					if !time.Now().UTC().After(session.ValidUntil) {
 						var user utilitymodels.User
 						if err := db.Model(session).Association("User").Find(&user); err != nil {
-							log.Warn(err.Error())
+							c.Logger().Error(err.Error())
 						} else {
 							// Check if user is valid
 							if user.ID > 0 && user.Active.Valid && user.Active.Bool {
@@ -136,7 +132,7 @@ func Session(db *gorm.DB, config *SessionConfig) echo.MiddlewareFunc {
 							} else {
 								// User is invalid or not active
 								if !config.DisableLogging {
-									log.Debugf(
+									c.Logger().Debugf(
 										"Invalid or deactivated user: userID: %d | %+v",
 										user.ID, user.Active,
 									)
@@ -144,6 +140,7 @@ func Session(db *gorm.DB, config *SessionConfig) echo.MiddlewareFunc {
 							}
 						}
 					}
+
 				default:
 					// This is broken!1!!1elf!
 				}

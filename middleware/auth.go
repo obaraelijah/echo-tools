@@ -47,11 +47,11 @@ func Login(db *gorm.DB, user *utilitymodels.User, c echo.Context) error {
 	r := make([]byte, 64)
 	for {
 		if _, err := rand.Read(r); err != nil {
-			c.Logger().Warn("Error while generating random numbers")
+			c.Logger().Error("Error while generating random numbers")
 			continue
 		}
 		sessionID := fmt.Sprintf("%x", r)
-		db.Find(&utilitymodels.Session{}).Where("session_id = ?", sessionID).Count(&count)
+		db.Find(&utilitymodels.Session{}, "sesion_id = ?", sessionID).Count(&count)
 		if count == 0 {
 			session.SessionID = sessionID
 			break
