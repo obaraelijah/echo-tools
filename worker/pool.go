@@ -15,8 +15,6 @@ type pool struct {
 	//newTasks chan bool
 	//queue is the channel, worker consume their tasks from
 	queue chan Task
-	//quit is the control channel to stop the main go routine
-	quit chan bool
 }
 
 // PoolConfig Configuration for a worker pool.
@@ -39,7 +37,6 @@ func NewPool(c *PoolConfig) *pool {
 	return &pool{
 		numWorker: c.NumWorker,
 		queue:     make(chan Task, c.QueueSize),
-		quit:      make(chan bool),
 	}
 }
 
@@ -72,6 +69,5 @@ func (p *pool) Stop() {
 	for _, w := range p.workers {
 		w.Stop()
 	}
-	p.quit <- true
 	p.workers = make([]*worker, 0)
 }
