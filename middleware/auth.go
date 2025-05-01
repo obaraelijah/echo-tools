@@ -38,7 +38,8 @@ type IdentifiedAuthModel interface {
 // Parameter user: Can be retrieved by auth.Authenticate.
 // Parameter c: Pointer to the current context. Must implement middleware.SessionContext
 // Parameter config: Refer to SessionConfig.
-func Login(db *gorm.DB, model IdentifiedAuthModel, c echo.Context) error {
+// Parameter isSessionCookie: Sets a session cookie if true, else a persistent cookie will be set.
+func Login(db *gorm.DB, model IdentifiedAuthModel, c echo.Context, isSessionCookie bool) error {
 	context := c.Get("SessionContext").(SessionContext)
 
 	// Couldn't find session with the current user associated
@@ -79,9 +80,12 @@ func Login(db *gorm.DB, model IdentifiedAuthModel, c echo.Context) error {
 			Value:    session.SessionID,
 			Path:     context.GetSessionConfig().CookiePath,
 			Domain:   "", // Only allow current site
-			MaxAge:   int(context.GetSessionConfig().CookieAge.Seconds()),
 			Secure:   *context.GetSessionConfig().Secure,
 			SameSite: http.SameSiteDefaultMode,
+		}
+
+		if !isSessionCookie {
+			cookie.MaxAge = int(context.GetSessionConfig().CookieAge.Seconds())
 		}
 
 		c.SetCookie(cookie)
