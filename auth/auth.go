@@ -17,9 +17,9 @@ var (
 	ErrHashError            = errors.New("hashing has failed")
 )
 
-// Authenticate Try to authenticate with the given credentials
-func Authenticate(db *gorm.DB, username string, password string) (*utilitymodels.User, error) {
-	var u utilitymodels.User
+// AuthenticateLocalUser tries to authenticate a local user with the given credentials
+func AuthenticateLocalUser(db *gorm.DB, username string, password string) (*utilitymodels.LocalUser, error) {
+	var u utilitymodels.LocalUser
 	var count int64
 
 	db.Find(&u, "username = ?", username).Count(&count)
@@ -39,8 +39,8 @@ func Authenticate(db *gorm.DB, username string, password string) (*utilitymodels
 	return &u, nil
 }
 
-func SetNewPassword(db *gorm.DB, userID uint, newPassword string) error {
-	var u utilitymodels.User
+func SetNewPasswordForLocalUser(db *gorm.DB, userID uint, newPassword string) error {
+	var u utilitymodels.LocalUser
 	var count int64
 
 	if err := db.Find(&u, userID).Count(&count).Error; err != nil {
@@ -57,7 +57,7 @@ func SetNewPassword(db *gorm.DB, userID uint, newPassword string) error {
 		u.Password = string(hash)
 	}
 
-	if err := middleware.InvalidateSessions(db, userID); err != nil {
+	if err := middleware.InvalidateSessions(db, userID, "local"); err != nil {
 		return err
 	}
 

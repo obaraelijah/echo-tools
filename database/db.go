@@ -1,7 +1,6 @@
 package database
 
 import (
-	"database/sql"
 	"os"
 
 	"github.com/obaraelijah/echo-tools/utilitymodels"
@@ -16,7 +15,10 @@ func Initialize(dial gorm.Dialector, models ...interface{}) *gorm.DB {
 		os.Exit(1)
 	}
 
-	models = append(models, &utilitymodels.User{})
+	models = append(models, &utilitymodels.LocalUser{})
+	models = append(models, &utilitymodels.LDAPUser{})
+	models = append(models, &utilitymodels.LDAPProvider{})
+	models = append(models, &utilitymodels.Session{})
 
 	// Migrate
 	if err := conn.AutoMigrate(
@@ -28,21 +30,17 @@ func Initialize(dial gorm.Dialector, models ...interface{}) *gorm.DB {
 	return conn
 }
 
-// CreateUser Helper method to create a user. bcrypt with a cost of 12 is used as hash.
-func CreateUser(db *gorm.DB, username string, password string, email *string, active bool) (*utilitymodels.User, error) {
+// CreateLocalUser Helper method to create a user. bcrypt with a cost of 12 is used as hash.
+func CreateLocalUser(db *gorm.DB, username string, password string, email *string) (*utilitymodels.LocalUser, error) {
 	hash, err := bcrypt.GenerateFromPassword([]byte(password), 12)
 	if err != nil {
 		return nil, err
 	}
 
-	u := utilitymodels.User{
+	u := utilitymodels.LocalUser{
 		Username: username,
 		Email:    email,
 		Password: string(hash),
-		Active: sql.NullBool{
-			Bool:  active,
-			Valid: true,
-		},
 	}
 	if err := db.Create(&u).Error; err != nil {
 		return nil, err

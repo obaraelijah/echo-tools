@@ -9,7 +9,7 @@ import (
 )
 
 type SessionContext interface {
-	GetUserID() *uint
+	GetUser() any
 	GetSessionID() *string
 	IsAuthenticated() bool
 	GetSessionConfig() *SessionConfig
@@ -31,15 +31,20 @@ type SessionConfig struct {
 }
 
 type s struct {
-	userID        *uint
+	authModelID   uint
+	authModelKey  string
 	authenticated bool
 	sessionConfig *SessionConfig
 	sessionID     *string
 }
 
-// GetUserID Returns a pointer to a userID if present else nil
-func (s *s) GetUserID() *uint {
-	return s.userID
+// GetUser Returns the pointer to a user model or nil if the request was unauthenticated
+func (s *s) GetUser() any {
+	if f, exists := authMap[s.authModelKey]; !exists {
+		return nil
+	} else {
+		return f(s.authModelID)
+	}
 }
 
 // IsAuthenticated Returns true if the session of this request is valid
@@ -57,7 +62,8 @@ func (s *s) GetSessionID() *string {
 }
 
 func (s *s) flush() {
-	s.userID = nil
+	s.authModelKey = ""
+	s.authModelID = 0
 	s.authenticated = false
 	s.sessionID = nil
 }
@@ -80,6 +86,25 @@ func (config *SessionConfig) FixSessionConfig() {
 	return
 }
 
+var authMap map[string]func(uint) any
+
+// RegisterAuthProvider is used to register a new auth provider besides the already existing ones.
+// The authIdentifier must be unique and is used to retrieve the correct UserModel with getUserModel which
+// should return its own user struct
+func RegisterAuthProvider(getProviderInformation func() (string, func(uint) any)) {
+	authIdentifier, getUserModel := getProviderInformation()
+
+	if authIdentifier == "" {
+		panic("invalid auth provider identifier")
+	}
+
+	if _, exists := authMap[authIdentifier]; exists {
+		panic("auth provider with that key already exists")
+	}
+
+	authMap[authIdentifier] = getUserModel
+}
+
 // Session Use as middleware. Requires CustomContext to be set with a corresponding struct that embeds SessionContext
 // or has a field named SessionContext. If SessionContext is not found, the middleware is skipped.
 func Session(db *gorm.DB, config *SessionConfig) echo.MiddlewareFunc {
@@ -88,12 +113,14 @@ func Session(db *gorm.DB, config *SessionConfig) echo.MiddlewareFunc {
 	}
 	config.FixSessionConfig()
 
+	authMap = map[string]func(foreign uint) any{}
+
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
 			// Check if SessionContext is available
-
 			sessionContext := &s{
-				userID:        nil,
+				authModelID:   0,
+				authModelKey:  "",
 				authenticated: false,
 				sessionConfig: config,
 			}
@@ -120,25 +147,8 @@ func Session(db *gorm.DB, config *SessionConfig) echo.MiddlewareFunc {
 
 					// Check if session is not expired
 					if !time.Now().UTC().After(session.ValidUntil) {
-						var user utilitymodels.User
-						if err := db.Model(session).Association("User").Find(&user); err != nil {
-							c.Logger().Error(err.Error())
-						} else {
-							// Check if user is valid
-							if user.ID > 0 && user.Active.Valid && user.Active.Bool {
-								sessionContext.userID = &user.ID
-								sessionContext.sessionID = &session.SessionID
-								sessionContext.authenticated = true
-							} else {
-								// User is invalid or not active
-								if !config.DisableLogging {
-									c.Logger().Debugf(
-										"Invalid or deactivated user: userID: %d | %+v",
-										user.ID, user.Active,
-									)
-								}
-							}
-						}
+						sessionContext.authModelKey = session.AuthKey
+						sessionContext.authModelID = session.AuthID
 					}
 
 				default:

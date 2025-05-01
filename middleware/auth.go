@@ -28,17 +28,24 @@ func GetSessionContext(c echo.Context) (SessionContext, error) {
 
 }
 
+type IdentifiedAuthModel interface {
+	GetAuthModelIdentifier() (string, uint)
+	UpdateLastLogin(c echo.Context, db *gorm.DB, loginTime time.Time)
+}
+
 // Login This method is used to log a user in. auth.Authenticate has to be called before.
 // A cookie is set if the user can be logged in.
 // Parameter user: Can be retrieved by auth.Authenticate.
 // Parameter c: Pointer to the current context. Must implement middleware.SessionContext
 // Parameter config: Refer to SessionConfig.
-func Login(db *gorm.DB, user *utilitymodels.User, c echo.Context) error {
+func Login(db *gorm.DB, model IdentifiedAuthModel, c echo.Context) error {
 	context := c.Get("SessionContext").(SessionContext)
 
 	// Couldn't find session with the current user associated
+	authKey, authID := model.GetAuthModelIdentifier()
 	session := utilitymodels.Session{
-		UserID:     user.ID,
+		AuthKey:    authKey,
+		AuthID:     authID,
 		ValidUntil: time.Now().UTC().Add(*context.GetSessionConfig().CookieAge),
 	}
 
@@ -63,10 +70,8 @@ func Login(db *gorm.DB, user *utilitymodels.User, c echo.Context) error {
 		c.Logger().Errorf("Error saving session to database: %s", err.Error())
 		return ErrDatabaseError
 	} else {
-		if err := db.Model(&user).Update("last_login_at", time.Now().UTC()).Error; err != nil {
-			c.Logger().Warnf("Error updating last_login_at of user %d: %s", user.ID, err.Error())
-			return ErrDatabaseError
-		}
+		now := time.Now().UTC()
+		model.UpdateLastLogin(c, db, now)
 
 		// Session was saved, we can set the cookie
 		cookie := &http.Cookie{
@@ -114,8 +119,8 @@ func Logout(db *gorm.DB, c echo.Context) error {
 }
 
 // InvalidateSessions Helper method to invalidate all sessions of a user
-func InvalidateSessions(db *gorm.DB, userID uint) error {
-	if err := db.Where("user_id = ?", userID).Delete(&utilitymodels.Session{}).Error; err != nil {
+func InvalidateSessions(db *gorm.DB, authID uint, authKey string) error {
+	if err := db.Where("auth_id = ? AND auth_key = ?", authID, authKey).Delete(&utilitymodels.Session{}).Error; err != nil {
 		return ErrDatabaseError
 	}
 	return nil
