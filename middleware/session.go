@@ -135,7 +135,7 @@ func Session(db *gorm.DB, config *SessionConfig) echo.MiddlewareFunc {
 
 				var sessionCount int64
 				var session utilitymodels.Session
-				db.Find(&session).Where("session_id = ?", cookie.Value).Count(&sessionCount)
+				db.Find(&session, "session_id = ?", cookie.Value).Count(&sessionCount)
 				switch sessionCount {
 				case 0:
 					// No session with that id was found
