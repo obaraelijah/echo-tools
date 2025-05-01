@@ -73,4 +73,5 @@ func (p *pool) Stop() {
 		w.Stop()
 	}
 	p.quit <- true
+	p.workers = make([]*worker, 0)
 }
