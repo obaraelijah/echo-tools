@@ -17,6 +17,7 @@ type LocalUser struct {
 }
 
 type LDAPProvider struct {
+	Common
 	Name         string
 	Uri          string
 	SearchBase   string
