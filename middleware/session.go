@@ -150,8 +150,9 @@ func Session(db *gorm.DB, config *SessionConfig) echo.MiddlewareFunc {
 						sessionContext.authModelKey = session.AuthKey
 						sessionContext.authModelID = session.AuthID
 
-						//TODO: This only checks if there's a valid session token
-						sessionContext.authenticated = true
+						if sessionContext.GetUser() != nil {
+							sessionContext.authenticated = true
+						}
 					}
 
 				default:
