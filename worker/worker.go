@@ -1,8 +1,18 @@
 package worker
 
+type Worker interface {
+	SetQueue(chan Task)
+	Start()
+	Stop()
+}
+
 type worker struct {
 	queue chan Task
 	quit  chan bool
+}
+
+func (w *worker) SetQueue(c chan Task) {
+	w.queue = c
 }
 
 func (w *worker) Start() {
@@ -11,7 +21,7 @@ func (w *worker) Start() {
 		case <-w.quit:
 			return
 		case t := <-w.queue:
-			t.execute()
+			t.Execute()
 		}
 	}
 }
